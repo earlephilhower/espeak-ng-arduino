@@ -24,9 +24,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
 
 #include "readclause.h"
 #include "setlengths.h"

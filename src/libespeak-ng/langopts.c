@@ -27,9 +27,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
 
 #include "langopts.h"
 #include "mnemonics.h"                // for MNEM_TAB
@@ -41,6 +47,11 @@
 
 static int CheckTranslator(Translator *tr, const MNEM_TAB *keyword_tab, int key);
 static int LookupTune(const char *name);
+
+#ifdef ARDUINO
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchar-subscripts"
+#endif
 
 void LoadLanguageOptions(Translator *translator, int key, char *keyValue ) {
 if (CheckTranslator(translator, langopts_tab, key) != 0) {
@@ -177,6 +188,9 @@ if (CheckTranslator(translator, langopts_tab, key) != 0) {
 		}
 	}
 }
+#ifdef ARDUINO
+#pragma GCC diagnostic pop
+#endif
 
 void LoadConfig(void) {
 	// Load configuration file, if one exists

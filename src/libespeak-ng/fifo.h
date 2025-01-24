@@ -22,7 +22,11 @@
 #ifndef ESPEAK_NG_FIFO_H
 #define ESPEAK_NG_FIFO_H
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#endif
 #include "espeak_command.h"
 
 #ifdef __cplusplus

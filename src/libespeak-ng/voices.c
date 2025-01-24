@@ -29,15 +29,30 @@
 #include <string.h>
 #include <strings.h>
 
+#ifndef ARDUINO
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #else
 #include <dirent.h>
 #endif
+#endif
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
+
+#ifdef ARDUINO
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchar-subscripts"
+// These seem spurious and we can't just increase stack
+#pragma GCC diagnostic ignored "-Wformat-overflow"
+#endif
 
 #include "voice.h"                    // for voice_t, DoVoiceChange, N_PEAKS
 #include "common.h"                    // for GetFileLength, strncpy0
@@ -52,8 +67,9 @@
 #include "translate.h"                // for LANGUAGE_OPTIONS, DeleteTranslator
 #include "wavegen.h"                  // for InitBreath
 
+#ifndef ARDUINO
 static int AddToVoicesList(const char *fname, int len_path_voices, int is_language_file);
-
+#endif
 
 static const MNEM_TAB genders[] = {
 	{ "male", ENGENDER_MALE },
@@ -83,14 +99,45 @@ static const char *const variant_lists[3] = { variants_either, variants_male, va
 static voice_t voicedata;
 voice_t *voice = &voicedata;
 
+static const char *_voice = NULL;
+static size_t _voiceLen = 0;
+ESPEAK_API void espeak_InstallVoice(const unsigned char *data, size_t len) {
+        _voice = (const char *)data;
+        _voiceLen = len;
+}
+
+char *mem_fgets(char *buf, int size) {
+    char *save = buf;
+    if (!_voiceLen) return NULL;
+    while (size && _voiceLen) {
+        *buf = *_voice;
+        _voice++;
+        _voiceLen--;
+        if (*buf == '\n') {
+            if (size) *++buf = 0;
+            return save;
+        }
+        buf++;
+        size--;
+    }
+    if (size) *buf = 0;
+    return save;
+}
+
+
 static char *fgets_strip(char *buf, int size, FILE *f_in)
 {
 	// strip trailing spaces, and truncate lines at // comment
 	int len;
 	char *p;
 
-	if (fgets(buf, size, f_in) == NULL)
-		return NULL;
+        if (f_in == (FILE*)-1) {
+            if (mem_fgets(buf, size) == NULL)
+                return NULL;
+        } else {
+        	if (fgets(buf, size, f_in) == NULL)
+	        	return NULL;
+        }
 
 	if (buf[0] == '#') {
 		buf[0] = 0;
@@ -152,7 +199,7 @@ void ReadTonePoints(char *string, int *tone_pts)
 	       &tone_pts[4], &tone_pts[5], &tone_pts[6], &tone_pts[7],
 	       &tone_pts[8], &tone_pts[9]);
 }
-
+#ifndef ARDUINO
 static espeak_VOICE *ReadVoiceFile(FILE *f_in, const char *fname, int is_language_file)
 {
 	// Read a Voice file, allocate a VOICE_DATA and set data from the
@@ -245,7 +292,7 @@ static espeak_VOICE *ReadVoiceFile(FILE *f_in, const char *fname, int is_languag
 	voice_data->xx1 = n_variants;
 	return voice_data;
 }
-
+#endif
 void VoiceReset(int tone_only)
 {
 	// Set voice to the default values
@@ -449,8 +496,10 @@ voice_t *LoadVoice(const char *vname, int control)
 	strncpy0(voicename, vname, sizeof(voicename));
 	if (control & 0x10) {
 		strcpy(buf, vname);
-		if (GetFileLength(buf) <= 0)
-			return NULL;
+                if (!_voiceLen) {
+        		if (GetFileLength(buf) <= 0)
+	        		return NULL;
+                }
 	} else {
 		if (voicename[0] == 0 && !(control & 8)/*compiling phonemes*/)
 			strcpy(voicename, ESPEAKNG_DEFAULT_VOICE);
@@ -459,13 +508,17 @@ voice_t *LoadVoice(const char *vname, int control)
 		sprintf(path_voices, "%s%cvoices%c", path_home, PATHSEP, PATHSEP);
 		sprintf(buf, "%s%s", path_voices, voicename); // look in the main voices directory
 
-		if (GetFileLength(buf) <= 0) {
+		if (GetFileLength(buf) <= 0 || _voiceLen) {
 			sprintf(path_voices, "%s%clang%c", path_home, PATHSEP, PATHSEP);
 			sprintf(buf, "%s%s", path_voices, voicename); // look in the main languages directory
 		}
 	}
 
-	f_voice = fopen(buf, "r");
+        if (_voice) {
+            f_voice = (FILE*)-1;
+        } else {
+        	f_voice = fopen(buf, "r");
+        }
 
         if (!(control & 8)/*compiling phonemes*/)
             language_type = ESPEAKNG_DEFAULT_VOICE; // default
@@ -667,7 +720,8 @@ voice_t *LoadVoice(const char *vname, int control)
                 espeak_ng_STATUS status = LoadMbrolaTable(name1, name2, &srate);
                 if (status != ENS_OK) {
                     espeak_ng_PrintStatusCodeMessage(status, stderr, NULL);
-                    fclose(f_voice);
+                    if (f_voice != (FILE*)-1)
+                        fclose(f_voice);
                     return NULL;
                 }
                 else
@@ -696,7 +750,7 @@ voice_t *LoadVoice(const char *vname, int control)
             }
         }
 	}
-	if (f_voice != NULL)
+	if (f_voice != NULL && f_voice != (FILE*)-1)
 		fclose(f_voice);
 
 	if ((translator == NULL) && (!tone_only)) {
@@ -1187,8 +1241,9 @@ char const *SelectVoice(espeak_VOICE *voice_select, int *found)
 
 static void GetVoices(const char *path, int len_path_voices, int is_language_file)
 {
+#ifndef ARDUINO
 	char fname[sizeof(path_home)+100];
-
+#endif
 #if PLATFORM_WINDOWS
 	WIN32_FIND_DATAA FindFileData;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -1214,6 +1269,7 @@ static void GetVoices(const char *path, int len_path_voices, int is_language_fil
 	} while (FindNextFileA(hFind, &FindFileData) != 0);
 	FindClose(hFind);
 #else
+#ifndef ARDUINO
 	DIR *dir;
 	struct dirent *ent;
 
@@ -1237,6 +1293,7 @@ static void GetVoices(const char *path, int len_path_voices, int is_language_fil
 	}
 	closedir(dir);
 #endif
+#endif
 }
 
 #pragma GCC visibility push(default)
@@ -1249,7 +1306,6 @@ ESPEAK_NG_API espeak_ng_STATUS espeak_ng_SetVoiceByFile(const char *filename)
 	char buf[60];
 
 	strncpy0(buf, filename, sizeof(buf));
-
 	variant_name = ExtractVoiceVariantName(buf, 0, 1);
 
 	for (ix = 0;; ix++) {
@@ -1410,7 +1466,7 @@ ESPEAK_API espeak_VOICE *espeak_GetCurrentVoice(void)
 }
 
 #pragma GCC visibility pop
-
+#ifndef ARDUINO
 static int AddToVoicesList(const char *fname, int len_path_voices, int is_language_file) {
 	int ftype = GetFileLength(fname);
 
@@ -1426,10 +1482,12 @@ static int AddToVoicesList(const char *fname, int len_path_voices, int is_langua
 		// pass voice file name within the voices directory
 		espeak_VOICE *voice_data;
 		voice_data = ReadVoiceFile(f_voice, fname+len_path_voices, is_language_file);
-		fclose(f_voice);
+		if (f_voice != (FILE*)-1)
+                    fclose(f_voice);
 
 		if (voice_data != NULL)
 			voices_list[n_voices_list++] = voice_data;
 	}
 	return 0;
 }
+#endif

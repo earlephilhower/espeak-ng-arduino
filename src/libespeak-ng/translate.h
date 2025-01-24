@@ -22,8 +22,13 @@
 
 #include <stdbool.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/encoding.h"
+#endif
 
 #ifdef __cplusplus
 extern "C"
@@ -572,8 +577,8 @@ typedef struct {
 	#define PUNCT_INTONATIONS 6
 	unsigned char punct_to_tone[INTONATION_TYPES][PUNCT_INTONATIONS];
 
-	char *data_dictrules;     // language_1   translation rules file
-	char *data_dictlist;      // language_2   dictionary lookup file
+	const char *data_dictrules;     // language_1   translation rules file
+	const char *data_dictlist;      // language_2   dictionary lookup file
 	char *dict_hashtab[N_HASH_DICT];   // hash table to index dictionary lookup file
 	char *letterGroups[N_LETTER_GROUPS];
 

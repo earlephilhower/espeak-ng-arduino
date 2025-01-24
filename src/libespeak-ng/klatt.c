@@ -31,8 +31,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#endif
 
 #include "klatt.h"
 #include "common.h"      // for espeak_rand

@@ -27,7 +27,11 @@ extern "C"
 
 #include <stdint.h>
 #include <stdbool.h>
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#endif
 #include "phoneme.h"              // for PHONEME_TAB, N_PHONEME_TAB
 
 #define espeakINITIALIZE_PHONEME_IPA 0x0002 // move this to speak_lib.h, after eSpeak version 1.46.02

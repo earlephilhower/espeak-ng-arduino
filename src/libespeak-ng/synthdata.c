@@ -27,9 +27,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
 
 #include "synthdata.h"
 #include "common.h"                    // for GetFileLength
@@ -63,45 +69,85 @@ int phoneme_tab_number = 0;
 
 int seq_len_adjust;
 
+static const unsigned char *_phontab;
+static size_t _phontabLen;
+static const unsigned char *_phonindex;
+static size_t _phonindexLen = 0;
+static const unsigned char *_phondata;
+static size_t _phondataLen = 0;
+static const unsigned char *_intonations;
+static size_t _intonationsLen = 0;
+
+ESPEAK_API void espeak_InstallPhonIndex(const unsigned char *data, size_t len) {
+    _phonindex = data;
+    _phonindexLen = len;
+}
+ESPEAK_API void espeak_InstallPhonTab(const unsigned char *data, size_t len) {
+    _phontab = data;
+    _phontabLen = len;
+}
+ESPEAK_API void espeak_InstallPhonData(const unsigned char *data, size_t len) {
+    _phondata = data;
+    _phondataLen = len;
+}
+ESPEAK_API void espeak_InstallIntonations(const unsigned char *data, size_t len) {
+    _intonations = data;
+    _intonationsLen = len;
+}
+
 static espeak_ng_STATUS ReadPhFile(void **ptr, const char *fname, int *size, espeak_ng_ERROR_CONTEXT *context)
 {
 	if (!ptr) return EINVAL;
 
-	FILE *f_in;
-	int length;
-	char buf[sizeof(path_home)+40];
-
-	sprintf(buf, "%s%c%s", path_home, PATHSEP, fname);
-	length = GetFileLength(buf);
-	if (length < 0) // length == -errno
-		return create_file_error_context(context, -length, buf);
-
-	if ((f_in = fopen(buf, "rb")) == NULL)
-		return create_file_error_context(context, errno, buf);
-
-	if (*ptr != NULL) {
-		free(*ptr);
-		*ptr = NULL;
-	}
-	
-	if (length == 0) {
-		*ptr = NULL;
-		return 0;
-	}
-
-	if ((*ptr = malloc(length)) == NULL) {
-		fclose(f_in);
-		return ENOMEM;
-	}
-	if (fread(*ptr, 1, length, f_in) != length) {
-		int error = errno;
-		fclose(f_in);
-		free(*ptr);
-		*ptr = NULL;
-		return create_file_error_context(context, error, buf);
-	}
-
-	fclose(f_in);
+     	int length;
+        FILE *f_in;
+        if (!strcmp(fname, "phontab") && _phontab) {
+                *ptr = (void *)_phontab;
+                length = _phontabLen;
+        } else if (!strcmp(fname, "phonindex") && _phonindex) {
+                *ptr = (void *)_phonindex;
+                length = _phonindexLen;
+        } else if (!strcmp(fname, "phondata") && _phondata) {
+                *ptr = (void *)_phondata;
+                length = _phondataLen;
+        } else if (!strcmp(fname, "intonations") && _intonations) {
+                *ptr = (void *)_intonations;
+                length = _intonationsLen;
+        } else {
+        	char buf[sizeof(path_home)+40];
+        
+        	sprintf(buf, "%s%c%s", path_home, PATHSEP, fname);
+        	length = GetFileLength(buf);
+        	if (length < 0) // length == -errno
+        		return create_file_error_context(context, -length, buf);
+        
+        	if ((f_in = fopen(buf, "rb")) == NULL)
+        		return create_file_error_context(context, errno, buf);
+        
+        	if (*ptr != NULL) {
+        		free(*ptr);
+        		*ptr = NULL;
+        	}
+        	
+        	if (length == 0) {
+        		*ptr = NULL;
+        		return 0;
+        	}
+        
+        	if ((*ptr = malloc(length)) == NULL) {
+        		fclose(f_in);
+        		return ENOMEM;
+        	}
+        	if (fread(*ptr, 1, length, f_in) != (size_t)length) {
+        		int error = errno;
+        		fclose(f_in);
+        		free(*ptr);
+        		*ptr = NULL;
+        		return create_file_error_context(context, error, buf);
+        	}
+        
+        	fclose(f_in);
+        }
 	if (size != NULL)
 		*size = length;
 	return ENS_OK;
@@ -166,10 +212,10 @@ espeak_ng_STATUS LoadPhData(int *srate, espeak_ng_ERROR_CONTEXT *context)
 
 void FreePhData(void)
 {
-	free(phoneme_tab_data);
-	free(phoneme_index);
-	free(phondata_ptr);
-	free(tunes);
+	if (phoneme_tab_data != _phontab) free(phoneme_tab_data);
+	if ((void *)phoneme_index != (void *)_phonindex) free(phoneme_index);
+	if ((void *)phondata_ptr != (void *)_phondata) free(phondata_ptr);
+	if ((void *)tunes != (void *)_intonations) free(tunes);
 	phoneme_tab_data = NULL;
 	phoneme_index = NULL;
 	phondata_ptr = NULL;

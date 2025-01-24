@@ -706,4 +706,46 @@ ESPEAK_API const char *espeak_Info(const char **path_data);
 /* Returns the version number string.
    path_data  returns the path to espeak_data
 */
+
+#ifdef __cplusplus
+extern "C"
+#endif
+ESPEAK_API int SynthesizeOneStep(unsigned int unique_identifier, const void *text, int flags);
+/* Generates up to one period worth of samples, returns 0 on success or !0 on end of speech or error */
+
+#ifdef __cplusplus
+extern "C"
+#endif
+ESPEAK_API void espeak_EnableSingleStep();
+
+#ifdef __cplusplus
+extern "C"
+#endif
+ESPEAK_API void espeak_InstallDict(const unsigned char *data, size_t len);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+ESPEAK_API void espeak_InstallPhonIndex(const unsigned char *data, size_t len);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+ESPEAK_API void espeak_InstallPhonTab(const unsigned char *data, size_t len);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+ESPEAK_API void espeak_InstallPhonData(const unsigned char *data, size_t len);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+ESPEAK_API void espeak_InstallIntonations(const unsigned char *data, size_t len);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+ESPEAK_API void espeak_InstallVoice(const unsigned char *data, size_t len);
+
 #endif

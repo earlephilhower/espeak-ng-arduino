@@ -19,7 +19,11 @@
 #ifndef ESPEAK_NG_H
 #define ESPEAK_NG_H
 
+#ifndef ARDUINO
 #include <espeak-ng/speak_lib.h>
+#else
+#include "speak_lib.h"
+#endif
 
 #ifdef __cplusplus
 extern "C"

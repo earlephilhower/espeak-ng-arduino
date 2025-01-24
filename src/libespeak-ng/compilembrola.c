@@ -25,8 +25,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#endif
 
 #include "mbrola.h"
 

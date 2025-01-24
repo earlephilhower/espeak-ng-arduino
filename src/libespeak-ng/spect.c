@@ -26,14 +26,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef ARDUINO
 #ifdef HAVE_SYS_ENDIAN_H
 #include <sys/endian.h>
 #else
 #include <endian.h>
 #endif
+#else
+#include "local_endian.h"
+#endif
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#endif
 
 #include "spect.h"
 #include "ieee80.h"                    // for ConvertFromIeeeExtended

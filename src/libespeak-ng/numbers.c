@@ -29,9 +29,23 @@
 #include <errno.h>
 #include <limits.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
+
+
+#ifdef ARDUINO
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchar-subscripts"
+// These seem spurious and we can't just increase stack
+#pragma GCC diagnostic ignored "-Wformat-overflow"
+#endif
 
 #include "numbers.h"
 #include "common.h"

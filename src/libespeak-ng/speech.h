@@ -20,8 +20,14 @@
 #ifndef ESPEAK_NG_SPEECH_H
 #define ESPEAK_NG_SPEECH_H
 
+#ifndef ARDUINO
 #include <endian.h>               // for BYTE_ORDER, BIG_ENDIAN
 #include <espeak-ng/espeak_ng.h>
+#else
+#include "local_endian.h"
+#include "espeak-ng/espeak_ng.h"
+#endif
+
 
 #if defined(__has_feature)
 #  if __has_feature(memory_sanitizer)

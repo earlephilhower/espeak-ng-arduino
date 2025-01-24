@@ -20,7 +20,11 @@
 #ifndef ESPEAK_NG_PHONEME_H
 #define ESPEAK_NG_PHONEME_H
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#endif
 
 #ifdef __cplusplus
 extern "C"

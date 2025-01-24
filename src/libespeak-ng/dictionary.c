@@ -28,9 +28,21 @@
 #include <wchar.h>
 #include <assert.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
+
+#ifdef ARDUINO
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchar-subscripts"
+#endif
+
 
 #include "common.h"                // for GetFileLength, strncpy0
 #include "dictionary.h"
@@ -131,7 +143,7 @@ static void InitGroups(Translator *tr)
 	memset(tr->letterGroups, 0, sizeof(tr->letterGroups));
 	memset(tr->groups3, 0, sizeof(tr->groups3));
 
-	p = tr->data_dictrules;
+	p = (char *)tr->data_dictrules;
 	// If there are no rules in the dictionary, compile_dictrules will not
 	// write a RULE_GROUP_START (written in the for loop), but will write
 	// a RULE_GROUP_END.
@@ -193,52 +205,69 @@ static void InitGroups(Translator *tr)
 	}
 }
 
+static const unsigned char *_dict = NULL;
+static size_t _dictLen = 0;
+void espeak_InstallDict(const unsigned char *data, size_t len) {
+        _dict = data;
+        _dictLen = len;
+}
+
 int LoadDictionary(Translator *tr, const char *name, int no_error)
 {
 	int hash;
 	char *p;
 	int *pw;
 	int length;
-	FILE *f;
+#ifndef ARDUINO
+        FILE *f;
+#endif
 	int size;
 	char fname[sizeof(path_home)+20];
 
 	if (dictionary_name != name)
-		strncpy(dictionary_name, name, 40); // currently loaded dictionary name
+		strncpy(dictionary_name, name, 40 - 1); // currently loaded dictionary name
 	if (tr->dictionary_name != name)
-		strncpy(tr->dictionary_name, name, 40);
+		strncpy(tr->dictionary_name, name, 40 - 1);
 
-	// Load a pronunciation data file into memory
-	// bytes 0-3:  offset to rules data
-	// bytes 4-7:  number of hash table entries
-	sprintf(fname, "%s%c%s_dict", path_home, PATHSEP, name);
-	size = GetFileLength(fname);
-
-	if (tr->data_dictlist != NULL) {
-		free(tr->data_dictlist);
-		tr->data_dictlist = NULL;
-	}
-
-	f = fopen(fname, "rb");
-	if ((f == NULL) || (size <= 0)) {
-		if (no_error == 0)
-			fprintf(stderr, "Can't read dictionary file: '%s'\n", fname);
-		if (f != NULL)
-			fclose(f);
-		return 1;
-	}
-
-	if ((tr->data_dictlist = malloc(size)) == NULL) {
-		fclose(f);
-		return 3;
-	}
-	size = fread(tr->data_dictlist, 1, size, f);
-	fclose(f);
+        if (!_dict) {
+#ifndef ARDUINO // Always in flash
+        	// Load a pronunciation data file into memory
+        	// bytes 0-3:  offset to rules data
+        	// bytes 4-7:  number of hash table entries
+        	sprintf(fname, "%s%c%s_dict", path_home, PATHSEP, name);
+        	size = GetFileLength(fname);
+        
+        	if (tr->data_dictlist != NULL) {
+        		free(tr->data_dictlist);
+        		tr->data_dictlist = NULL;
+        	}
+        	f = fopen(fname, "rb");
+        	if ((f == NULL) || (size <= 0)) {
+        		if (no_error == 0)
+        			fprintf(stderr, "Can't read dictionary file: '%s'\n", fname);
+        		if (f != NULL)
+        			fclose(f);
+        		return 1;
+        	}
+        
+        	if ((tr->data_dictlist = malloc(size)) == NULL) {
+        		fclose(f);
+        		return 3;
+        	}
+        	size = fread(tr->data_dictlist, 1, size, f);
+        	fclose(f);
+#else
+                return 1;
+#endif
+        } else {
+                size = _dictLen;
+                tr->data_dictlist = (const char *)_dict;
+        }
 
 	pw = (int *)(tr->data_dictlist);
 	length = Reverse4Bytes(pw[1]);
 
-	if (size <= (N_HASH_DICT + sizeof(int)*2)) {
+	if (size <= (int)(N_HASH_DICT + sizeof(int)*2)) {
 		fprintf(stderr, "Empty _dict file: '%s\n", fname);
 		return 2;
 	}
@@ -254,7 +283,7 @@ int LoadDictionary(Translator *tr, const char *name, int no_error)
 	InitGroups(tr);
 
 	// set up hash table for data_dictlist
-	p = &(tr->data_dictlist[8]);
+	p = (char *)&(tr->data_dictlist[8]);
 
 	for (hash = 0; hash < N_HASH_DICT; hash++) {
 		tr->dict_hashtab[hash] = p;
@@ -263,7 +292,7 @@ int LoadDictionary(Translator *tr, const char *name, int no_error)
 		p++; // skip over the zero which terminates the list for this hash value
 	}
 
-	if ((tr->dict_min_size > 0) && (size < (unsigned int)tr->dict_min_size))
+	if ((tr->dict_min_size > 0) && (size < (int)tr->dict_min_size))
 		fprintf(stderr, "Full dictionary is not installed for '%s'\n", name);
 
 	return 0;
@@ -326,6 +355,7 @@ const char *EncodePhonemes(const char *p, char *outptr, int *bad_phoneme)
 				p++;
 				break;
 			}
+                        /* Fallthrough */
 		default:
 			// lookup the phoneme mnemonic, find the phoneme with the highest number of
 			// matching characters
@@ -1033,7 +1063,7 @@ void SetWordStress(Translator *tr, char *output, unsigned int *dictionary_flags,
 		// stress on first syllable, unless it is a light syllable followed by a heavy syllable
 		if ((syllable_weight[1] > 0) || (syllable_weight[2] == 0))
 			break;
-		// fallthrough:
+		/* Fallthrough */
 	case STRESSPOSN_2L:
 		// stress on second syllable
 		if ((stressed_syllable == 0) && (vowel_count > 2)) {
@@ -1510,8 +1540,9 @@ static void MatchRule(Translator *tr, char *word[], char *word_start, int group_
 
 	char *pre_ptr;
 	char *post_ptr;       // pointer to first character after group
-
+#ifndef ARDUINO
 	char *rule_start;     // start of current match template
+#endif
 	char *p;
 	int match_type;       // left, right, or consume
 	int syllable_count;
@@ -1529,10 +1560,14 @@ static void MatchRule(Translator *tr, char *word[], char *word_start, int group_
 
 	unsigned char condition_num;
 	char *common_phonemes; // common to a group of entries
+#ifndef ARDUINO
 	char *group_chars;
+#endif
 	char word_buf[N_WORD_BYTES];
 
+#ifndef ARDUINO
 	group_chars = *word;
+#endif
 
 	if (rule == NULL) {
 		match_out->points = 0;
@@ -1566,10 +1601,10 @@ static void MatchRule(Translator *tr, char *word[], char *word_start, int group_
 
 		pre_ptr = *word;
 		post_ptr = *word + group_length;
-
+#ifndef ARDUINO
 		// work through next rule until end, or until no-match proved
 		rule_start = rule;
-
+#endif
 		while (!failed) {
 			rb = *rule++;
 			add_points = 0;
@@ -2054,13 +2089,17 @@ static void MatchRule(Translator *tr, char *word[], char *word_start, int group_
 					// show each rule that matches, and it's points score
 					int pts;
 					char decoded_phonemes[80];
-					char output[80];
+#ifndef ARDUINO
+                                        char output[80];
+#endif
 
 					pts = match.points;
 					if (group_length > 1)
 						pts += 35; // to account for an extra letter matching
 					DecodePhonemes(match.phonemes, decoded_phonemes);
-					fprintf(f_trans, "%3d\t%s [%s]\n", pts, DecodeRule(group_chars, group_length, rule_start, word_flags, output), decoded_phonemes);
+#ifndef ARDUINO
+                                        fprintf(f_trans, "%3d\t%s [%s]\n", pts, DecodeRule(group_chars, group_length, rule_start, word_flags, output), decoded_phonemes);
+#endif
 				}
 			}
 		}
@@ -2657,7 +2696,9 @@ static const char *LookupDict2(Translator *tr, const char *word, const char *wor
 
 		if (phoneme_len == 0) {
 			if (option_phonemes & espeakPHONEMES_TRACE) {
+#ifndef ARDUINO
 				print_dictionary_flags(flags, dict_flags_buf, sizeof(dict_flags_buf));
+#endif
 				fprintf(f_trans, "Flags:  %s  %s\n", word1, dict_flags_buf);
 			}
 			return 0; // no phoneme translation found here, only flags. So use rules
@@ -2687,7 +2728,9 @@ static const char *LookupDict2(Translator *tr, const char *word, const char *wor
 					fprintf(f_trans, "Found: '%s %s\n", word1, word_buf);
 				} else
 					fprintf(f_trans, "Found: '%s", word1);
-				print_dictionary_flags(flags, dict_flags_buf, sizeof(dict_flags_buf));
+#ifndef ARDUINO
+                                        print_dictionary_flags(flags, dict_flags_buf, sizeof(dict_flags_buf));
+#endif
 				fprintf(f_trans, "' [%s]  %s\n", ph_decoded, dict_flags_buf);
 			}
 		}
@@ -2741,7 +2784,7 @@ int LookupDictList(Translator *tr, char **wordptr, char *ph_out, unsigned int *f
 	while ((word2[nbytes = utf8_nbytes(word2)] == ' ') && (word2[nbytes+1] == '.')) {
 		// look for an abbreviation of the form a.b.c
 		// try removing the spaces between the dots and looking for a match
-		if (length + 1 > sizeof(word)) {
+		if (length + 1 > (int)sizeof(word)) {
 			/* Too long abbreviation, leave as it is */
 			length = 0;
 			break;
@@ -2756,7 +2799,7 @@ int LookupDictList(Translator *tr, char **wordptr, char *ph_out, unsigned int *f
 		nbytes = 0;
 		while (((c = word2[nbytes]) != 0) && (c != ' '))
 			nbytes++;
-		if (length + nbytes + 1 <= sizeof(word)) {
+		if (length + nbytes + 1 <= (int)sizeof(word)) {
 			memcpy(&word[length], word2, nbytes);
 			word[length+nbytes] = 0;
 			found =  LookupDict2(tr, word, word2, ph_out, flags, end_flags, wtab);

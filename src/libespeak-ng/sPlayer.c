@@ -1,5 +1,10 @@
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#endif
 #include "sPlayer.h"
 
 extern unsigned char *out_ptr;

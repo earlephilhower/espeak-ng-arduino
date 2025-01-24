@@ -181,6 +181,7 @@ int ucd_isspace(codepoint_t c)
 		case 0x85: /* U+0085 : NEXT LINE */
 			return 1;
 		}
+                /* fallthrough */
 	default:
 		return 0;
 	}

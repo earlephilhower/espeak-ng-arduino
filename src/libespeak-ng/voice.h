@@ -20,7 +20,11 @@
 #ifndef ESPEAK_NG_VOICE_H
 #define ESPEAK_NG_VOICE_H
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#endif
 
 #include "mnemonics.h"
 #include "translate.h"

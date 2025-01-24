@@ -24,7 +24,11 @@
 #include <stdbool.h>
 #include <wchar.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/speak_lib.h>
+#else
+#include "espeak-ng/speak_lib.h"
+#endif
 
 #ifdef __cplusplus
 extern "C"

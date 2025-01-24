@@ -25,9 +25,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
 
 #include "phonemelist.h"
 #include "phoneme.h"     // for PHONEME_TAB, phVOWEL, REPLACE_PHONEMES, phPAUSE

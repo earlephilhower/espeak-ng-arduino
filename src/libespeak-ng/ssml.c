@@ -33,11 +33,17 @@
 #include <wchar.h>
 #include <wctype.h>
 
-
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
 #include <ucd/ucd.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#include "ucd/ucd.h"
+#endif
 
 #include "ssml.h"
 #include "common.h"           // for strncpy0

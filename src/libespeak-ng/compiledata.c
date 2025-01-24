@@ -32,9 +32,15 @@
 #include <unistd.h>
 #include <assert.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
 
 #include "common.h"                    // for GetFileLength, strncpy0, ...c
 #include "error.h"                    // for create_file_error_context

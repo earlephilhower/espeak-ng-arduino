@@ -30,10 +30,17 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
 #include <ucd/ucd.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#include "ucd/ucd.h"
+#endif
 
 #include "soundicon.h" 
 #include "common.h"                // for GetFileLength
@@ -123,7 +130,7 @@ static espeak_ng_STATUS LoadSoundFile(const char *fname, int index, espeak_ng_ER
 		fclose(f);
 		return ENOMEM;
 	}
-	if (fread(p, 1, length, f) != length) {
+	if (fread(p, 1, length, f) != (size_t)length) {
 		int error = errno;
 		fclose(f);
 		if (fname_temp[0])

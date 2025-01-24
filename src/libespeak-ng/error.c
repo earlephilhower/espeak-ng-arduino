@@ -24,7 +24,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#endif
 
 #include "error.h"
 #include "common.h"           // for strncpy0

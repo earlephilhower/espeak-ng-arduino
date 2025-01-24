@@ -29,9 +29,15 @@
 #include <wchar.h>
 #include <wctype.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
 
 #include "translate.h"
 #include "translateword.h"
@@ -801,7 +807,7 @@ static int TranslateLetter(Translator *tr, char *word, char *phonemes, int contr
 	int phontab_1;
 	char capital[30];
 	char ph_buf[80];
-	char ph_buf2[80];
+	char ph_buf2[80 + 110];
 	char ph_alphabet[80];
 	char hexbuf[12];
 	static const char pause_string[] = { phonPAUSE, 0 };

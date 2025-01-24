@@ -31,7 +31,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#endif
 
 #include "speech.h"
 #include "espeak_command.h"

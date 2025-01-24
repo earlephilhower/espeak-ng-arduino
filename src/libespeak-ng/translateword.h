@@ -22,8 +22,13 @@
 
 #include <stdbool.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/encoding.h"
+#endif
 
 #ifdef __cplusplus
 extern "C"

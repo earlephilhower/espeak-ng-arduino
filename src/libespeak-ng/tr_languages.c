@@ -27,9 +27,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
 
 #include "common.h"
 #include "setlengths.h"          // for SetLengthMods
@@ -100,8 +106,8 @@ const ALPHABET *AlphabetFromChar(int c)
 	const ALPHABET *alphabet = alphabets;
 
 	while (alphabet->name != NULL) {
-		if (c <= alphabet->range_max) {
-			if (c >= alphabet->range_min)
+		if (c <= (int)alphabet->range_max) {
+			if (c >= (int)alphabet->range_min)
 				return alphabet;
 			else
 				break;
@@ -827,7 +833,7 @@ Translator *SelectTranslator(const char *name)
 		break;
 	case L('e', 't'): // Estonian
 		tr->encoding = ESPEAKNG_ENCODING_ISO_8859_4;
-		// fallthrough:
+		/* Fallthrough */
 	case L('f', 'i'): // Finnish
 	{
 		tr->langopts.long_stop = 130;

@@ -22,11 +22,16 @@
 #include <stdlib.h>
 #include <wchar.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
-#include <espeak-ng/encoding.h>
-
 #include <espeak-ng/encoding.h>   // for espeak_ng_TEXT_DECODER, ESPEAKNG_EN...
+#include <espeak-ng/speak_lib.h>  // for espeakCHARS_16BIT, espeakCHARS_8BIT
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/encoding.h"   // for espeak_ng_TEXT_DECODER, ESPEAKNG_EN...
 #include "espeak-ng/speak_lib.h"  // for espeakCHARS_16BIT, espeakCHARS_8BIT
+#endif
+
 #include "mnemonics.h"               // for LookupMnem, MNEM_TAB
 #include "translate.h"            // for LEADING_2_BITS, UTF8_TAIL_BITS
 

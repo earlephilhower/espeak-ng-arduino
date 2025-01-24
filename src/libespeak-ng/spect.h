@@ -20,7 +20,11 @@
 #ifndef ESPEAK_NG_SPECT_H
 #define ESPEAK_NG_SPECT_H
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>     // for espeak_ng_STATUS
+#else
+#include "espeak-ng/espeak_ng.h"     // for espeak_ng_STATUS
+#endif
 #include "voice.h"                   // for N_PEAKS
 #include "synthesize.h"              // for N_KLATTP2
 

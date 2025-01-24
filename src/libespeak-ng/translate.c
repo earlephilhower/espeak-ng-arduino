@@ -28,9 +28,20 @@
 #include <wchar.h>
 #include <wctype.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
 #include <espeak-ng/encoding.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#include "espeak-ng/encoding.h"
+#endif
+
+#ifdef ARDUINO
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchar-subscripts"
+#endif
 
 #include "translate.h"
 #include "common.h"
@@ -116,8 +127,10 @@ void DeleteTranslator(Translator *tr)
 {
 	if (!tr) return;
 
+#ifndef ARDUINO //always in flash
 	if (tr->data_dictlist != NULL)
 		free(tr->data_dictlist);
+#endif
 	free(tr);
 }
 

@@ -20,7 +20,11 @@
 #ifndef ESPEAK_NG_LANGOPTS_H
 #define ESPEAK_NG_LANGOPTS_H
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#endif
 #include "translate.h"
 
 #ifdef __cplusplus

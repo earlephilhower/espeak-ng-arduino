@@ -29,8 +29,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef ARDUINO
 #include <espeak-ng/espeak_ng.h>
 #include <espeak-ng/speak_lib.h>
+#else
+#include "espeak-ng/espeak_ng.h"
+#include "espeak-ng/speak_lib.h"
+#endif
 
 #include "wavegen.h"
 #include "common.h"                   // for espeak_rand
@@ -1051,6 +1056,7 @@ void SetEmbedded(int control, int value)
 	{
 	case EMBED_T:
 		WavegenSetEcho(); // and drop through to case P
+                /* Fallthrough */
 	case EMBED_P:
 		SetPitchFormants();
 		break;
@@ -1329,6 +1335,7 @@ static int WavegenFill2(void)
 			break;
 		case WCMD_SPECT2: // as WCMD_SPECT but stop any concurrent wave file
 			wdata.n_mix_wavefile = 0; // ... and drop through to WCMD_SPECT case
+                        /* Fallthrough */
 		case WCMD_SPECT:
 			echo_complete = echo_length;
 			result = Wavegen(length & 0xffff, q[1] >> 16, resume, (frame_t *)q[2], (frame_t *)q[3], wvoice);
